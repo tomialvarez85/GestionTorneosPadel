@@ -448,7 +448,8 @@ async def create_tournament(tournament_data: TournamentCreate, request: Request)
     }
     
     await db.tournaments.insert_one(tournament_doc)
-    return tournament_doc
+    # Return without _id to avoid ObjectId serialization issue
+    return {k: v for k, v in tournament_doc.items() if k != "_id"}
 
 @api_router.get("/tournaments")
 async def get_tournaments(status: Optional[str] = None):
@@ -517,14 +518,14 @@ async def register_for_tournament(tournament_id: str, request: Request):
         "user_id": user["user_id"]
     })
     if existing:
-        raise HTTPException(status_code=400, detail="Already registered")
+        raise HTTPException(status_code=400, detail="Ya estás inscripto en este torneo")
     
     registration_id = f"reg_{uuid.uuid4().hex[:12]}"
     registration = {
         "registration_id": registration_id,
         "tournament_id": tournament_id,
         "user_id": user["user_id"],
-        "user_name": f"{user['first_name']} {user['last_name']}",
+        "user_name": f"{user.get('first_name', '')} {user.get('last_name', '')}".strip(),
         "registered_at": datetime.now(timezone.utc).isoformat()
     }
     
