@@ -1,34 +1,137 @@
-.App-logo {
-    height: 40vmin;
-    pointer-events: none;
+/* App-specific styles */
+
+/* Hero section background */
+.hero-gradient {
+  background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
 }
 
-@media (prefers-reduced-motion: no-preference) {
-    .App-logo {
-        animation: App-logo-spin infinite 20s linear;
-    }
+/* Card hover effects */
+.card-hover {
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
 
-.App-header {
-    background-color: #0f0f10;
-    min-height: 100vh;
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    font-size: calc(10px + 2vmin);
-    color: white;
+.card-hover:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 10px 40px -10px rgba(0, 0, 0, 0.1);
 }
 
-.App-link {
-    color: #61dafb;
+/* Button styles */
+.btn-primary {
+  background: hsl(217 91% 60%);
+  color: white;
+  font-weight: 600;
+  letter-spacing: 0.025em;
+  border-radius: 0.5rem;
+  transition: background-color 0.2s ease, box-shadow 0.2s ease;
 }
 
-@keyframes App-logo-spin {
-    from {
-        transform: rotate(0deg);
-    }
-    to {
-        transform: rotate(360deg);
-    }
+.btn-primary:hover {
+  background: hsl(217 91% 50%);
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.3);
+}
+
+/* Status badges */
+.status-open {
+  background: hsl(160 84% 39% / 0.1);
+  color: hsl(160 84% 30%);
+}
+
+.status-closed {
+  background: hsl(38 92% 50% / 0.1);
+  color: hsl(38 92% 35%);
+}
+
+.status-finished {
+  background: hsl(215 16% 47% / 0.1);
+  color: hsl(215 16% 35%);
+}
+
+.status-in_progress {
+  background: hsl(217 91% 60% / 0.1);
+  color: hsl(217 91% 45%);
+}
+
+/* Tournament bracket styles */
+.bracket-match {
+  background: white;
+  border: 1px solid hsl(214 32% 91%);
+  border-radius: 0.75rem;
+  transition: box-shadow 0.2s ease;
+}
+
+.bracket-match:hover {
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
+}
+
+.bracket-match.completed {
+  border-left: 3px solid hsl(160 84% 39%);
+}
+
+.bracket-match.pending {
+  border-left: 3px solid hsl(38 92% 50%);
+}
+
+/* Winner highlight */
+.winner-highlight {
+  background: hsl(66 100% 50% / 0.15);
+  border-left: 3px solid hsl(66 100% 45%);
+}
+
+/* Ranking position styles */
+.rank-1 {
+  background: linear-gradient(135deg, #FFD700, #FFA500);
+  color: #0F172A;
+}
+
+.rank-2 {
+  background: linear-gradient(135deg, #E8E8E8, #C0C0C0);
+  color: #0F172A;
+}
+
+.rank-3 {
+  background: linear-gradient(135deg, #CD7F32, #B8860B);
+  color: white;
+}
+
+/* Table row hover */
+.table-row-hover {
+  transition: background-color 0.15s ease;
+}
+
+.table-row-hover:hover {
+  background: hsl(var(--muted) / 0.5);
+}
+
+/* Navigation active state */
+.nav-active {
+  color: hsl(217 91% 60%);
+  font-weight: 600;
+}
+
+.nav-active::after {
+  content: '';
+  position: absolute;
+  bottom: -2px;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: hsl(217 91% 60%);
+  border-radius: 1px;
+}
+
+/* Form input focus */
+.input-focus:focus {
+  border-color: hsl(217 91% 60%);
+  box-shadow: 0 0 0 3px hsl(217 91% 60% / 0.1);
+}
+
+/* Loading spinner */
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.spinner {
+  animation: spin 1s linear infinite;
 }
