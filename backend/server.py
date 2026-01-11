@@ -1097,26 +1097,19 @@ async def seed_data():
 # Include the router in the main app
 app.include_router(api_router)
 
-# CORS Configuration - Must come after router include
-# Note: When allow_credentials=True, allow_origins cannot be ["*"]
-origins = os.environ.get('CORS_ORIGINS', '*').split(',')
-if origins == ['*']:
-    # If wildcard, we need to handle it differently for credentials
-    app.add_middleware(
-        CORSMiddleware,
-        allow_credentials=True,
-        allow_origins=["*"],  # This works with allow_credentials in newer FastAPI
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
-else:
-    app.add_middleware(
-        CORSMiddleware,
-        allow_credentials=True,
-        allow_origins=origins,
-        allow_methods=["*"],
-        allow_headers=["*"],
-    )
+# CORS Configuration - Must handle credentials properly
+# When allow_credentials=True, we must specify exact origins (not "*")
+app.add_middleware(
+    CORSMiddleware,
+    allow_credentials=True,
+    allow_origins=[
+        "http://localhost:3000",
+        "https://localhost:3000",
+    ] + [origin.strip() for origin in os.environ.get('CORS_ORIGINS', '').split(',') if origin.strip() and origin.strip() != '*'],
+    allow_origin_regex=r"https://.*\.preview\.emergentagent\.com",  # Allow all preview domains
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 @app.on_event("shutdown")
 async def shutdown_db_client():
