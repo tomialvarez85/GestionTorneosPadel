@@ -1,0 +1,166 @@
+{
+  "typography": {
+    "headings": {
+      "family": "Manrope, sans-serif",
+      "weights": ["600", "800"],
+      "usage": "Use for all section titles, hero text, and modal headers. Tracking tight (-0.02em).",
+      "import": "@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;800&display=swap');"
+    },
+    "body": {
+      "family": "Public Sans, sans-serif",
+      "weights": ["400", "500", "600"],
+      "usage": "Use for all paragraphs, inputs, and data tables. High legibility.",
+      "import": "@import url('https://fonts.googleapis.com/css2?family=Public+Sans:wght@400;500;600&display=swap');"
+    }
+  },
+  "colors": {
+    "palette": {
+      "primary": {
+        "DEFAULT": "#2563EB",
+        "foreground": "#FFFFFF",
+        "description": "Electric Blue - Main Action Buttons, Active States"
+      },
+      "secondary": {
+        "DEFAULT": "#0F172A",
+        "foreground": "#FFFFFF",
+        "description": "Deep Navy - Sidebar, Footer, Primary Text"
+      },
+      "accent": {
+        "DEFAULT": "#DFFF00",
+        "foreground": "#0F172A",
+        "description": "Neon Tennis Yellow - Badges, APA Points, Winner Highlights"
+      },
+      "background": {
+        "DEFAULT": "#F8FAFC",
+        "paper": "#FFFFFF"
+      },
+      "muted": {
+        "DEFAULT": "#F1F5F9",
+        "foreground": "#64748B"
+      },
+      "border": "#E2E8F0"
+    },
+    "semantic": {
+      "success": "#10B981",
+      "warning": "#F59E0B",
+      "error": "#EF4444",
+      "info": "#3B82F6"
+    }
+  },
+  "visual_enhancers": {
+    "surface_strategies": [
+      {
+        "name": "The Court Surface",
+        "usage": "Main Content Cards",
+        "css_classes": "bg-white border border-slate-200 shadow-sm rounded-xl"
+      },
+      {
+        "name": "Active Bracket Node",
+        "usage": "Winning Player in Bracket",
+        "css_classes": "bg-slate-900 text-white border-l-4 border-accent shadow-md"
+      },
+      {
+        "name": "Glass Header",
+        "usage": "Sticky Navigation",
+        "css_classes": "bg-white/80 backdrop-blur-md border-b border-slate-200/50"
+      }
+    ],
+    "decorations": [
+      "Use subtle 'noise' texture on the sidebar background to mimic grip tape texture.",
+      "Use 1px grid lines in the background of the 'Rankings' page to mimic the net/court lines."
+    ]
+  },
+  "components": {
+    "library": "shadcn/ui",
+    "custom_components": [
+      {
+        "name": "TournamentBracket",
+        "description": "Horizontal scrolling container with connected nodes. Use @sportsgram/brackets logic but custom styling.",
+        "styling": "Nodes should look like scorecards. Connectors should be sharp, not curved (90 degree angles)."
+      },
+      {
+        "name": "PlayerCard",
+        "description": "Card showing player rank, name, and points.",
+        "styling": "Minimalist white card with a large rank number in 'Manrope ExtraBold' opacity-10 in the background."
+      },
+      {
+        "name": "APAPointsBadge",
+        "description": "Pill shape badge for points.",
+        "styling": "bg-accent text-accent-foreground font-bold uppercase tracking-wider text-xs px-3 py-1 rounded-full"
+      }
+    ],
+    "shadcn_modifications": {
+      "Button": "rounded-lg font-semibold tracking-wide shadow-sm hover:shadow-md transition-all",
+      "Card": "rounded-xl border-slate-100 shadow-sm hover:shadow-md transition-shadow duration-300",
+      "Table": "border-collapse w-full caption-bottom text-sm"
+    }
+  },
+  "grids": {
+    "marketing": {
+      "name": "The Tetris Grid",
+      "classes": "grid grid-cols-1 md:grid-cols-12 gap-6 p-6",
+      "usage": "Landing Page, Tournament Gallery"
+    },
+    "dashboard": {
+      "name": "The Control Room",
+      "classes": "grid grid-cols-1 md:grid-cols-4 gap-4 p-4",
+      "usage": "Admin Panel, User Stats"
+    }
+  },
+  "motion": {
+    "library": "framer-motion",
+    "guidelines": [
+      "Hover: scale(1.02) for cards.",
+      "Page Load: Staggered fade-in for list items (0.05s delay).",
+      "Bracket: Smooth scroll to current match.",
+      "Transitions: type: 'spring', stiffness: 300, damping: 30"
+    ]
+  },
+  "image_urls": {
+    "hero": [
+      {
+        "url": "https://images.pexels.com/photos/35261961/pexels-photo-35261961.jpeg",
+        "description": "Padel match action shot - Use for Landing Hero",
+        "category": "hero"
+      },
+      {
+        "url": "https://images.pexels.com/photos/35248387/pexels-photo-35248387.jpeg",
+        "description": "Padel player serving - Use for 'Join Tournament' CTA",
+        "category": "marketing"
+      }
+    ],
+    "placeholders": {
+      "avatar": "https://api.dicebear.com/7.x/avataaars/svg?seed=",
+      "court_texture": "https://www.transparenttextures.com/patterns/carbon-fibre.png"
+    }
+  },
+  "instructions_to_main_agent": [
+    "1. INSTALL FONTS: Add the Google Fonts imports to index.css immediately.",
+    "2. SETUP TAILWIND: Update tailwind.config.js with the specific colors (Electric Blue, Navy, Neon Yellow).",
+    "3. BRACKET LOGIC: Install '@sportsgram/brackets' or build a custom recursive component. Do NOT use a dead library.",
+    "4. APA POINTS: Ensure the points logic (1000, 600, 360...) is visually distinct in the UI (e.g., Gold/Silver/Bronze styling).",
+    "5. MOBILE FIRST: The bracket view MUST be scrollable on mobile. Do not shrink it to fit.",
+    "6. DATA-TESTID: Add data-testid to all buttons and inputs (e.g., 'login-submit', 'create-tournament-btn')."
+  ],
+  "UNIVERSAL_GUIDELINES_FOR_MAIN_AGENT": [
+    "You tend to converge toward generic, 'on distribution' outputs. In frontend design, this creates what users call the 'AI slop' aesthetic. Avoid this: make creative, distinctive frontends that surprise and delight.",
+    "Dark colors look good when used independently without gradients. DO NOT use dark colors as gradients",
+    "Don't make generic centered layouts, simplistic gradients, and uniform styling.",
+    "Create depth through layered design elements with z-index hierarchy",
+    "Use glass-morphism effects with backdrop filters (12-24px blur)",
+    "You MUST NOT apply universal transition. Eg: transition: all. This results in breaking transforms. Always add transitions for specific interactive elements like button, input excluding transforms",
+    "You MUST NOT center align the app container, ie do not add .App { text-align: center; } in the css file. This disrupts the human natural reading flow of text",
+    "Always use modern button styles like pill-shaped, or sharp button with interaction animations & color relevant to the app style",
+    "NEVER: use AI assistant Emoji characters like 🤖🧠 etc for icons.",
+    "Every interaction needs micro-animations - hover states, transitions, parallax effects, and entrance animations. Static = dead.",
+    "Use 2-3x more spacing than feels comfortable. Cramped designs look cheap.",
+    "Subtle grain textures, noise overlays, custom cursors, selection states, and loading animations: separates good from extraordinary.",
+    "Main agent relies on these image URLs. Missing categories (especially sponsor logos) = main agent will use placeholder text which is FORBIDDEN",
+    "Prioritize using pre-existing components from src/components/ui when applicable",
+    "Create new components that match the style and conventions of existing components when needed",
+    "Examine existing components to understand the project's component patterns before creating new ones",
+    "Components MUST use named exports (export const ComponentName = ...)",
+    "Pages MUST use default exports (export default function PageName() {...})",
+    "Use 'sonner' for toasts. Sonner component are located in /app/src/components/ui/sonner.tsx"
+  ]
+}
