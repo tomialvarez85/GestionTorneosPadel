@@ -6,7 +6,7 @@ async function main() {
     data: {
       name: "Admin",
       email: "admin@padel.com",
-      password: "$2b$10$HASH", // bcrypt
+      password: "123456", // bcrypt
       role: "ADMIN"
     }
   });

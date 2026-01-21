@@ -7,6 +7,55 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+model User {
+  id               Int            @id @default(autoincrement())
+  name             String
+  lastname         String
+  email            String         @unique
+  password         String
+  role             Role           @default(USER)
+  points           Int            @default(0)
+  createdAt        DateTime       @default(now())
+  matchesAsPlayer1 Match[]        @relation("Player1Matches")
+  matchesAsPlayer2 Match[]        @relation("Player2Matches")
+  registrations    Registration[]
+}
+
+model Tournament {
+  id            Int              @id @default(autoincrement())
+  name          String
+  category      String
+  date          DateTime
+  capacity      Int
+  status        TournamentStatus @default(OPEN)
+  createdAt     DateTime         @default(now())
+  matches       Match[]
+  registrations Registration[]
+}
+
+model Registration {
+  id           Int        @id @default(autoincrement())
+  userId       Int
+  tournamentId Int
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+  user         User       @relation(fields: [userId], references: [id])
+
+  @@unique([userId, tournamentId])
+}
+
+model Match {
+  id           Int        @id @default(autoincrement())
+  tournamentId Int
+  round        Round
+  player1Id    Int
+  player2Id    Int
+  winnerId     Int?
+  score        String?
+  player1      User       @relation("Player1Matches", fields: [player1Id], references: [id])
+  player2      User       @relation("Player2Matches", fields: [player2Id], references: [id])
+  tournament   Tournament @relation(fields: [tournamentId], references: [id])
+}
+
 enum Role {
   USER
   ADMIN
@@ -23,60 +72,4 @@ enum Round {
   CUARTOS
   SEMI
   FINAL
-}
-
-model User {
-  id        Int      @id @default(autoincrement())
-  name      String
-  lastname  String
-  email     String   @unique
-  password  String
-  role      Role     @default(USER)
-  points    Int      @default(0)
-  createdAt DateTime @default(now())
-
-  registrations Registration[]
-
-  matchesAsPlayer1 Match[] @relation("Player1Matches")
-  matchesAsPlayer2 Match[] @relation("Player2Matches")
-}
-
-model Tournament {
-  id        Int      @id @default(autoincrement())
-  name      String
-  category  String
-  date      DateTime
-  capacity  Int
-  status    TournamentStatus @default(OPEN)
-  createdAt DateTime @default(now())
-
-  registrations Registration[]
-  matches       Match[]
-}
-
-model Registration {
-  id           Int @id @default(autoincrement())
-  userId       Int
-  tournamentId Int
-
-  user       User       @relation(fields: [userId], references: [id])
-  tournament Tournament @relation(fields: [tournamentId], references: [id])
-
-  @@unique([userId, tournamentId])
-}
-
-model Match {
-  id           Int @id @default(autoincrement())
-  tournamentId Int
-  round        Round
-  player1Id    Int
-  player2Id    Int
-  winnerId     Int?
-
-  score        String?
-
-  tournament Tournament @relation(fields: [tournamentId], references: [id])
-
-  player1 User @relation("Player1Matches", fields: [player1Id], references: [id])
-  player2 User @relation("Player2Matches", fields: [player2Id], references: [id])
 }
