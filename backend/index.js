@@ -1,17 +1,25 @@
-const express = require("express");
-const cors = require("cors");
-require("dotenv").config();
+import express from "express";
+import cors from "cors";
+import dotenv from "dotenv";
+
+dotenv.config();
 
 const app = express();
 
 app.use(cors({ origin: "*" }));
 app.use(express.json());
 
+// health check
 app.get("/", (req, res) => {
   res.json({ status: "ok", message: "Backend running" });
 });
 
-const PORT = process.env.PORT || 3000;
+// ejemplo
+app.get("/api/test", (req, res) => {
+  res.json({ message: "API funcionando" });
+});
+
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log("Server escuchando en puerto", PORT);
+  console.log(`🚀 Server escuchando en puerto ${PORT}`);
 });
