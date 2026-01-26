@@ -5,7 +5,7 @@ import { Button } from "../components/ui/button";
 import { useAuth } from "../App";
 import Navbar from "../components/Navbar";
 import { toast } from "sonner";
-import { Calendar, Users, Trophy, ArrowLeft, Loader2, CheckCircle, XCircle } from "lucide-react";
+import { Calendar, Users, Trophy, ArrowLeft } from "lucide-react";
 import TournamentBracket from "../components/TournamentBracket";
 
 export default function TournamentDetail() {
@@ -13,11 +13,9 @@ export default function TournamentDetail() {
   const navigate = useNavigate();
   const { user, token, API } = useAuth();
   const [tournament, setTournament] = useState(null);
-  const [registrations, setRegistrations] = useState([]);
+  const [pairs, setPairs] = useState([]);
   const [matches, setMatches] = useState({});
-  const [isRegistered, setIsRegistered] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [registering, setRegistering] = useState(false);
 
   useEffect(() => {
     const fetchData = async () => {
@@ -32,27 +30,11 @@ export default function TournamentDetail() {
         const tournamentData = await tournamentRes.json();
         setTournament(tournamentData);
 
-        // Fetch registrations
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
-        const registrationsRes = await fetch(`${API}/tournaments/${id}/registrations`, {
-          credentials: "include",
-          headers,
-        });
-        if (registrationsRes.ok) {
-          const regData = await registrationsRes.json();
-          setRegistrations(regData);
-        }
-
-        // Check if user is registered
-        if (user) {
-          const checkRes = await fetch(`${API}/registrations/check/${id}`, {
-            credentials: "include",
-            headers,
-          });
-          if (checkRes.ok) {
-            const checkData = await checkRes.json();
-            setIsRegistered(checkData.is_registered);
-          }
+        // Fetch pairs
+        const pairsRes = await fetch(`${API}/tournaments/${id}/pairs`);
+        if (pairsRes.ok) {
+          const pairsData = await pairsRes.json();
+          setPairs(pairsData);
         }
 
         // Fetch matches if tournament has started
@@ -72,92 +54,14 @@ export default function TournamentDetail() {
     };
 
     fetchData();
-  }, [id, user, token, API, navigate]);
-
-  const handleRegister = async () => {
-    if (!user) {
-      toast.error("Debes iniciar sesión para inscribirte");
-      navigate("/login", { state: { from: { pathname: `/tournaments/${id}` } } });
-      return;
-    }
-
-    setRegistering(true);
-    try {
-      const headers = {
-        "Content-Type": "application/json",
-        ...(token ? { Authorization: `Bearer ${token}` } : {}),
-      };
-
-      const response = await fetch(`${API}/tournaments/${id}/register`, {
-        method: "POST",
-        credentials: "include",
-        headers,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || "Error al inscribirse");
-      }
-
-      setIsRegistered(true);
-      setTournament((prev) => ({
-        ...prev,
-        current_registrations: prev.current_registrations + 1,
-      }));
-      setRegistrations((prev) => [
-        ...prev,
-        {
-          user_id: user.user_id,
-          user_name: `${user.first_name} ${user.last_name}`,
-          registered_at: new Date().toISOString(),
-        },
-      ]);
-      toast.success("¡Inscripción exitosa!");
-    } catch (error) {
-      toast.error(error.message);
-    } finally {
-      setRegistering(false);
-    }
-  };
-
-  const handleCancelRegistration = async () => {
-    setRegistering(true);
-    try {
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
-
-      const response = await fetch(`${API}/tournaments/${id}/register`, {
-        method: "DELETE",
-        credentials: "include",
-        headers,
-      });
-
-      const data = await response.json();
-
-      if (!response.ok) {
-        throw new Error(data.detail || "Error al cancelar inscripción");
-      }
-
-      setIsRegistered(false);
-      setTournament((prev) => ({
-        ...prev,
-        current_registrations: prev.current_registrations - 1,
-      }));
-      setRegistrations((prev) => prev.filter((r) => r.user_id !== user.user_id));
-      toast.success("Inscripción cancelada");
-    } catch (error) {
-      toast.error(error.message);
-    } finally {
-      setRegistering(false);
-    }
-  };
+  }, [id, API, navigate]);
 
   const getStatusBadge = (status) => {
     const styles = {
-      open: "status-open",
-      closed: "status-closed",
-      in_progress: "status-in_progress",
-      finished: "status-finished",
+      open: "bg-green-100 text-green-800",
+      closed: "bg-yellow-100 text-yellow-800",
+      in_progress: "bg-blue-100 text-blue-800",
+      finished: "bg-gray-100 text-gray-800",
     };
     const labels = {
       open: "Abierto",
@@ -252,9 +156,9 @@ export default function TournamentDetail() {
                       <Users className="w-6 h-6 text-emerald-500" />
                     </div>
                     <div>
-                      <p className="text-sm text-muted-foreground">Inscriptos</p>
+                      <p className="text-sm text-muted-foreground">Parejas</p>
                       <p className="font-medium">
-                        {tournament.current_registrations} / {tournament.max_capacity}
+                        {tournament.current_pairs || 0} / {tournament.max_pairs}
                       </p>
                     </div>
                   </div>
@@ -284,44 +188,35 @@ export default function TournamentDetail() {
               </Card>
             )}
 
-            {/* Registrations List */}
+            {/* Pairs List */}
             <Card className="border-border">
               <CardHeader>
                 <CardTitle className="font-heading">
-                  Jugadores Inscriptos ({registrations.length})
+                  Parejas Inscriptas ({pairs.length})
                 </CardTitle>
               </CardHeader>
               <CardContent>
-                {registrations.length === 0 ? (
+                {pairs.length === 0 ? (
                   <p className="text-center text-muted-foreground py-8">
-                    Aún no hay jugadores inscriptos
+                    Aún no hay parejas inscriptas
                   </p>
                 ) : (
                   <div className="grid sm:grid-cols-2 gap-3">
-                    {registrations.map((reg, index) => (
+                    {pairs.map((pair, index) => (
                       <div
-                        key={reg.user_id || index}
-                        className={`flex items-center gap-3 p-3 rounded-xl ${
-                          reg.user_id === user?.user_id
-                            ? "bg-primary/10 border border-primary/20"
-                            : "bg-muted/50"
-                        }`}
-                        data-testid={`registration-${reg.user_id}`}
+                        key={pair.pair_id}
+                        className="flex items-center gap-3 p-4 rounded-xl bg-muted/50"
+                        data-testid={`pair-${pair.pair_id}`}
                       >
-                        <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center">
-                          <span className="font-medium text-secondary">
-                            {reg.user_name?.charAt(0) || "?"}
-                          </span>
+                        <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                          <span className="font-bold text-primary">{index + 1}</span>
                         </div>
-                        <div className="flex-1 min-w-0">
-                          <p className="font-medium truncate">{reg.user_name}</p>
+                        <div className="flex-1">
+                          <p className="font-medium">{pair.pair_name}</p>
                           <p className="text-xs text-muted-foreground">
-                            {new Date(reg.registered_at).toLocaleDateString("es-AR")}
+                            {pair.player1_name} & {pair.player2_name}
                           </p>
                         </div>
-                        {reg.user_id === user?.user_id && (
-                          <CheckCircle className="w-5 h-5 text-primary" />
-                        )}
                       </div>
                     ))}
                   </div>
@@ -332,17 +227,17 @@ export default function TournamentDetail() {
 
           {/* Sidebar */}
           <div className="space-y-6">
-            {/* Registration Card */}
-            <Card className="border-border sticky top-6">
+            {/* Info Card */}
+            <Card className="border-border">
               <CardContent className="p-6">
-                <h3 className="font-heading font-semibold text-lg mb-4">Inscripción</h3>
+                <h3 className="font-heading font-semibold text-lg mb-4">Información</h3>
 
                 {/* Capacity Progress */}
                 <div className="mb-6">
                   <div className="flex justify-between text-sm mb-2">
                     <span className="text-muted-foreground">Cupos disponibles</span>
                     <span className="font-medium">
-                      {tournament.max_capacity - tournament.current_registrations}
+                      {tournament.max_pairs - (tournament.current_pairs || 0)} parejas
                     </span>
                   </div>
                   <div className="h-3 bg-muted rounded-full overflow-hidden">
@@ -350,7 +245,7 @@ export default function TournamentDetail() {
                       className="h-full bg-primary rounded-full transition-all duration-500"
                       style={{
                         width: `${Math.min(
-                          (tournament.current_registrations / tournament.max_capacity) * 100,
+                          ((tournament.current_pairs || 0) / tournament.max_pairs) * 100,
                           100
                         )}%`,
                       }}
@@ -358,64 +253,15 @@ export default function TournamentDetail() {
                   </div>
                 </div>
 
-                {tournament.status === "open" ? (
-                  isRegistered ? (
-                    <div className="space-y-4">
-                      <div className="flex items-center gap-2 text-emerald-600 bg-emerald-50 p-3 rounded-lg">
-                        <CheckCircle className="w-5 h-5" />
-                        <span className="font-medium">Ya estás inscripto</span>
-                      </div>
-                      <Button
-                        variant="outline"
-                        className="w-full rounded-lg"
-                        onClick={handleCancelRegistration}
-                        disabled={registering}
-                        data-testid="cancel-registration-btn"
-                      >
-                        {registering ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Cancelando...
-                          </>
-                        ) : (
-                          <>
-                            <XCircle className="w-4 h-4 mr-2" />
-                            Cancelar Inscripción
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                  ) : tournament.current_registrations >= tournament.max_capacity ? (
-                    <div className="text-center py-4">
-                      <p className="text-amber-600 font-medium">Torneo completo</p>
-                      <p className="text-sm text-muted-foreground">No hay cupos disponibles</p>
-                    </div>
-                  ) : (
-                    <Button
-                      className="w-full rounded-lg h-12"
-                      onClick={handleRegister}
-                      disabled={registering}
-                      data-testid="register-tournament-btn"
-                    >
-                      {registering ? (
-                        <>
-                          <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                          Inscribiendo...
-                        </>
-                      ) : (
-                        "Inscribirme"
-                      )}
-                    </Button>
-                  )
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground">
-                      {tournament.status === "finished"
-                        ? "Este torneo ha finalizado"
-                        : "Las inscripciones están cerradas"}
-                    </p>
-                  </div>
-                )}
+                <div className="text-center py-4 bg-muted/50 rounded-lg">
+                  <p className="text-sm text-muted-foreground">
+                    {tournament.status === "open" 
+                      ? "Inscripciones gestionadas por administradores"
+                      : tournament.status === "finished"
+                      ? "Este torneo ha finalizado"
+                      : "Torneo en progreso"}
+                  </p>
+                </div>
               </CardContent>
             </Card>
 
@@ -426,6 +272,9 @@ export default function TournamentDetail() {
                   <Trophy className="w-5 h-5 text-accent" />
                   Puntos APA
                 </h3>
+                <p className="text-sm text-slate-300 mb-4">
+                  Cada jugador de la pareja recibe los puntos correspondientes
+                </p>
                 <div className="space-y-3 text-sm">
                   <div className="flex justify-between">
                     <span className="text-slate-300">Campeón</span>
