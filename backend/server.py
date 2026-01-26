@@ -878,24 +878,55 @@ async def check_tournament_completion(tournament_id: str):
 # ==================== RANKING ENDPOINT ====================
 
 @api_router.get("/ranking")
-async def get_ranking(limit: int = 50):
-    """Get global ranking - PUBLIC"""
-    users = await db.users.find(
-        {"total_points": {"$gt": 0}},
-        {"_id": 0, "password_hash": 0}
-    ).sort("total_points", -1).limit(limit).to_list(limit)
+async def get_ranking(category: Optional[str] = None, limit: int = 50):
+    """Get ranking - PUBLIC. Filter by category if provided."""
     
-    ranking = []
-    for idx, user in enumerate(users, 1):
-        ranking.append({
-            "position": idx,
-            "user_id": user["user_id"],
-            "name": f"{user.get('first_name', '')} {user.get('last_name', '')}".strip(),
-            "total_points": user.get("total_points", 0),
-            "tournaments_played": user.get("tournaments_played", 0)
-        })
+    if category:
+        # Ranking by specific category
+        users = await db.users.find(
+            {f"points_by_category.{category}": {"$gt": 0}},
+            {"_id": 0, "password_hash": 0}
+        ).to_list(1000)
+        
+        # Sort by category points
+        users.sort(key=lambda x: x.get("points_by_category", {}).get(category, 0), reverse=True)
+        users = users[:limit]
+        
+        ranking = []
+        for idx, user in enumerate(users, 1):
+            category_points = user.get("points_by_category", {}).get(category, 0)
+            ranking.append({
+                "position": idx,
+                "user_id": user["user_id"],
+                "name": f"{user.get('first_name', '')} {user.get('last_name', '')}".strip(),
+                "total_points": category_points,
+                "tournaments_played": user.get("tournaments_played", 0),
+                "category": category
+            })
+    else:
+        # Global ranking (all categories combined)
+        users = await db.users.find(
+            {"total_points": {"$gt": 0}},
+            {"_id": 0, "password_hash": 0}
+        ).sort("total_points", -1).limit(limit).to_list(limit)
+        
+        ranking = []
+        for idx, user in enumerate(users, 1):
+            ranking.append({
+                "position": idx,
+                "user_id": user["user_id"],
+                "name": f"{user.get('first_name', '')} {user.get('last_name', '')}".strip(),
+                "total_points": user.get("total_points", 0),
+                "tournaments_played": user.get("tournaments_played", 0),
+                "category": "all"
+            })
     
     return ranking
+
+@api_router.get("/categories")
+async def get_categories():
+    """Get all available categories - PUBLIC"""
+    return ["7ma", "6ta", "5ta", "4ta", "3ra", "2da", "1ra"]
 
 @api_router.get("/users/{user_id}/points-history")
 async def get_user_points_history(user_id: str, request: Request):
