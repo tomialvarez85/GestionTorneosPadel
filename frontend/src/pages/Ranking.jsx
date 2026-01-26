@@ -125,7 +125,9 @@ export default function Ranking() {
                   <Award className="w-8 h-8" />
                 </div>
                 <p className="text-sm text-muted-foreground mb-1">3° Lugar</p>
-                <h3 className="font-heading font-bold text-xl mb-2">{ranking[2].name}</h3>
+                <Link to={`/players/${ranking[2].user_id}`} className="hover:text-primary transition-colors">
+                  <h3 className="font-heading font-bold text-xl mb-2">{ranking[2].name}</h3>
+                </Link>
                 <p className="font-heading text-2xl text-primary font-bold">
                   {ranking[2].total_points}
                 </p>
