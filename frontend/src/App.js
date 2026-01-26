@@ -113,8 +113,13 @@ function App() {
         });
 
         if (response.ok) {
-          const userData = await response.json();
-          setUser(userData);
+          const text = await response.text();
+          try {
+            const userData = JSON.parse(text);
+            setUser(userData);
+          } catch {
+            setUser(null);
+          }
         } else {
           setUser(null);
           localStorage.removeItem("token");

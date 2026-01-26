@@ -30,7 +30,13 @@ export default function Login() {
         body: JSON.stringify({ email, password }),
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error("Error de servidor");
+      }
 
       if (!response.ok) {
         throw new Error(data.detail || "Error al iniciar sesión");
@@ -40,7 +46,7 @@ export default function Login() {
       toast.success("¡Bienvenido!");
       navigate(from, { replace: true });
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message || "Error al iniciar sesión");
     } finally {
       setLoading(false);
     }
