@@ -90,7 +90,9 @@ export default function Ranking() {
                   <Medal className="w-8 h-8" />
                 </div>
                 <p className="text-sm text-muted-foreground mb-1">2° Lugar</p>
-                <h3 className="font-heading font-bold text-xl mb-2">{ranking[1].name}</h3>
+                <Link to={`/players/${ranking[1].user_id}`} className="hover:text-primary transition-colors">
+                  <h3 className="font-heading font-bold text-xl mb-2">{ranking[1].name}</h3>
+                </Link>
                 <p className="font-heading text-2xl text-primary font-bold">
                   {ranking[1].total_points}
                 </p>
@@ -106,7 +108,9 @@ export default function Ranking() {
                   <Trophy className="w-10 h-10" />
                 </div>
                 <p className="text-sm text-muted-foreground mb-1">Campeón</p>
-                <h3 className="font-heading font-bold text-2xl mb-2">{ranking[0].name}</h3>
+                <Link to={`/players/${ranking[0].user_id}`} className="hover:text-primary transition-colors">
+                  <h3 className="font-heading font-bold text-2xl mb-2">{ranking[0].name}</h3>
+                </Link>
                 <p className="font-heading text-3xl text-primary font-bold">
                   {ranking[0].total_points}
                 </p>
