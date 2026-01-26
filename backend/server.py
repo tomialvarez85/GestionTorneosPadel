@@ -957,22 +957,33 @@ async def seed_data():
         "role": "admin",
         "total_points": 0,
         "tournaments_played": 0,
+        "points_by_category": {},
         "created_at": datetime.now(timezone.utc).isoformat()
     }
     await db.users.insert_one(admin)
     
-    # Create sample players
+    # Create sample players with points distributed across categories
     players_data = [
-        {"first_name": "Juan", "last_name": "Martín", "email": "juan@test.com", "points": 1600},
-        {"first_name": "Carlos", "last_name": "Rodríguez", "email": "carlos@test.com", "points": 1600},
-        {"first_name": "Miguel", "last_name": "Fernández", "email": "miguel@test.com", "points": 1200},
-        {"first_name": "Pablo", "last_name": "García", "email": "pablo@test.com", "points": 1200},
-        {"first_name": "Diego", "last_name": "López", "email": "diego@test.com", "points": 720},
-        {"first_name": "Andrés", "last_name": "Sánchez", "email": "andres@test.com", "points": 720},
-        {"first_name": "Lucas", "last_name": "Martínez", "email": "lucas@test.com", "points": 360},
-        {"first_name": "Mateo", "last_name": "González", "email": "mateo@test.com", "points": 360},
-        {"first_name": "Tomás", "last_name": "Díaz", "email": "tomas@test.com", "points": 180},
-        {"first_name": "Nicolás", "last_name": "Ruiz", "email": "nicolas@test.com", "points": 180},
+        {"first_name": "Juan", "last_name": "Martín", "email": "juan@test.com", 
+         "points": 2600, "points_by_category": {"4ta": 1600, "5ta": 1000}},
+        {"first_name": "Carlos", "last_name": "Rodríguez", "email": "carlos@test.com", 
+         "points": 2200, "points_by_category": {"4ta": 1600, "3ra": 600}},
+        {"first_name": "Miguel", "last_name": "Fernández", "email": "miguel@test.com", 
+         "points": 1560, "points_by_category": {"5ta": 1200, "4ta": 360}},
+        {"first_name": "Pablo", "last_name": "García", "email": "pablo@test.com", 
+         "points": 1200, "points_by_category": {"5ta": 1200}},
+        {"first_name": "Diego", "last_name": "López", "email": "diego@test.com", 
+         "points": 1080, "points_by_category": {"4ta": 720, "3ra": 360}},
+        {"first_name": "Andrés", "last_name": "Sánchez", "email": "andres@test.com", 
+         "points": 720, "points_by_category": {"5ta": 720}},
+        {"first_name": "Lucas", "last_name": "Martínez", "email": "lucas@test.com", 
+         "points": 540, "points_by_category": {"4ta": 360, "5ta": 180}},
+        {"first_name": "Mateo", "last_name": "González", "email": "mateo@test.com", 
+         "points": 360, "points_by_category": {"5ta": 360}},
+        {"first_name": "Tomás", "last_name": "Díaz", "email": "tomas@test.com", 
+         "points": 180, "points_by_category": {"4ta": 180}},
+        {"first_name": "Nicolás", "last_name": "Ruiz", "email": "nicolas@test.com", 
+         "points": 180, "points_by_category": {"5ta": 180}},
     ]
     
     user_ids = []
