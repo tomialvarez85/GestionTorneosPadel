@@ -37,6 +37,7 @@ export default function Register() {
       const response = await fetch(`${API}/auth/register`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
+        credentials: "include",
         body: JSON.stringify({
           first_name: firstName,
           last_name: lastName,
@@ -45,7 +46,13 @@ export default function Register() {
         }),
       });
 
-      const data = await response.json();
+      const text = await response.text();
+      let data;
+      try {
+        data = JSON.parse(text);
+      } catch {
+        throw new Error("Error de servidor");
+      }
 
       if (!response.ok) {
         throw new Error(data.detail || "Error al registrarse");
@@ -55,7 +62,7 @@ export default function Register() {
       toast.success("¡Registro exitoso!");
       navigate("/dashboard");
     } catch (error) {
-      toast.error(error.message);
+      toast.error(error.message || "Error al registrarse");
     } finally {
       setLoading(false);
     }
