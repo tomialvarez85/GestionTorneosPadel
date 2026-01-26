@@ -186,14 +186,14 @@ export default function Ranking() {
                           </div>
                         </td>
                         <td className="py-4 px-4">
-                          <div className="flex items-center gap-3">
+                          <Link to={`/players/${entry.user_id}`} className="flex items-center gap-3 hover:text-primary transition-colors">
                             <div className="w-10 h-10 rounded-full bg-secondary/10 flex items-center justify-center">
                               <span className="font-medium text-secondary">
                                 {entry.name?.charAt(0) || "?"}
                               </span>
                             </div>
                             <span className="font-medium">{entry.name}</span>
-                          </div>
+                          </Link>
                         </td>
                         <td className="py-4 px-4 text-center text-muted-foreground">
                           {entry.tournaments_played}
