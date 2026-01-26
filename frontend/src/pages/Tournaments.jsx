@@ -174,7 +174,7 @@ export default function Tournaments() {
                     <div className="flex items-center gap-3 text-sm text-muted-foreground">
                       <Users className="w-4 h-4" />
                       <span>
-                        {tournament.current_registrations} / {tournament.max_capacity} inscriptos
+                        {tournament.current_pairs || 0} / {tournament.max_pairs} parejas
                       </span>
                     </div>
                   </div>
@@ -186,7 +186,7 @@ export default function Tournaments() {
                         className="h-full bg-primary rounded-full transition-all duration-500"
                         style={{
                           width: `${Math.min(
-                            (tournament.current_registrations / tournament.max_capacity) * 100,
+                            ((tournament.current_pairs || 0) / tournament.max_pairs) * 100,
                             100
                           )}%`,
                         }}
