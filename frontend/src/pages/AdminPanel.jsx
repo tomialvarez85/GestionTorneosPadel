@@ -37,6 +37,7 @@ import {
   Shield,
   Play,
   CheckCircle,
+  UserPlus,
 } from "lucide-react";
 
 export default function AdminPanel() {
@@ -46,39 +47,42 @@ export default function AdminPanel() {
   const [loading, setLoading] = useState(true);
   const [selectedTournament, setSelectedTournament] = useState(null);
   const [tournamentMatches, setTournamentMatches] = useState({});
-  const [registrations, setRegistrations] = useState([]);
+  const [tournamentPairs, setTournamentPairs] = useState([]);
 
   // Tournament Form State
   const [tournamentForm, setTournamentForm] = useState({
     name: "",
     category: "4ta",
     date: "",
-    max_capacity: 16,
+    max_pairs: 8,
     description: "",
   });
   const [editingTournament, setEditingTournament] = useState(null);
   const [tournamentDialogOpen, setTournamentDialogOpen] = useState(false);
   const [savingTournament, setSavingTournament] = useState(false);
 
+  // Pair Form State
+  const [pairDialogOpen, setPairDialogOpen] = useState(false);
+  const [pairForm, setPairForm] = useState({ player1_id: "", player2_id: "" });
+  const [savingPair, setSavingPair] = useState(false);
+
   // Match Result State
   const [selectedMatch, setSelectedMatch] = useState(null);
   const [matchResultForm, setMatchResultForm] = useState({
-    set1_player1: 0,
-    set1_player2: 0,
-    set2_player1: 0,
-    set2_player2: 0,
-    set3_player1: null,
-    set3_player2: null,
-    winner_id: "",
+    set1_pair1: 0,
+    set1_pair2: 0,
+    set2_pair1: 0,
+    set2_pair2: 0,
+    set3_pair1: null,
+    set3_pair2: null,
+    winner_pair_id: "",
   });
   const [matchDialogOpen, setMatchDialogOpen] = useState(false);
   const [savingMatch, setSavingMatch] = useState(false);
 
   const getHeaders = () => {
     const headers = { "Content-Type": "application/json" };
-    if (token) {
-      headers["Authorization"] = `Bearer ${token}`;
-    }
+    if (token) headers["Authorization"] = `Bearer ${token}`;
     return headers;
   };
 
@@ -90,23 +94,13 @@ export default function AdminPanel() {
     setLoading(true);
     try {
       const headers = getHeaders();
-      
       const [tournamentsRes, usersRes] = await Promise.all([
         fetch(`${API}/tournaments`, { credentials: "include", headers }),
         fetch(`${API}/users`, { credentials: "include", headers }),
       ]);
 
-      if (tournamentsRes.ok) {
-        const data = await tournamentsRes.json();
-        setTournaments(data);
-      }
-      
-      if (usersRes.ok) {
-        const data = await usersRes.json();
-        setUsers(data);
-      } else {
-        console.error("Users fetch failed:", usersRes.status);
-      }
+      if (tournamentsRes.ok) setTournaments(await tournamentsRes.json());
+      if (usersRes.ok) setUsers(await usersRes.json());
     } catch (error) {
       console.error("Error fetching data:", error);
       toast.error("Error al cargar datos");
@@ -118,14 +112,13 @@ export default function AdminPanel() {
   const fetchTournamentDetails = async (tournamentId) => {
     try {
       const headers = getHeaders();
-      
-      const [matchesRes, regsRes] = await Promise.all([
+      const [matchesRes, pairsRes] = await Promise.all([
         fetch(`${API}/tournaments/${tournamentId}/matches`, { credentials: "include", headers }),
-        fetch(`${API}/tournaments/${tournamentId}/registrations`, { credentials: "include", headers }),
+        fetch(`${API}/tournaments/${tournamentId}/pairs`, { credentials: "include", headers }),
       ]);
 
       if (matchesRes.ok) setTournamentMatches(await matchesRes.json());
-      if (regsRes.ok) setRegistrations(await regsRes.json());
+      if (pairsRes.ok) setTournamentPairs(await pairsRes.json());
     } catch (error) {
       console.error("Error fetching tournament details:", error);
     }
@@ -155,12 +148,7 @@ export default function AdminPanel() {
       });
 
       const text = await response.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        throw new Error("Error de servidor");
-      }
+      const data = JSON.parse(text);
 
       if (!response.ok) throw new Error(data.detail || "Error al guardar torneo");
 
@@ -182,7 +170,7 @@ export default function AdminPanel() {
       name: tournament.name,
       category: tournament.category,
       date: tournament.date,
-      max_capacity: tournament.max_capacity,
+      max_pairs: tournament.max_pairs,
       description: tournament.description || "",
     });
     setTournamentDialogOpen(true);
@@ -213,9 +201,63 @@ export default function AdminPanel() {
       name: "",
       category: "4ta",
       date: "",
-      max_capacity: 16,
+      max_pairs: 8,
       description: "",
     });
+  };
+
+  // Pair Management
+  const handleCreatePair = async (e) => {
+    e.preventDefault();
+    if (!selectedTournament) return;
+
+    setSavingPair(true);
+    try {
+      const response = await fetch(`${API}/tournaments/${selectedTournament.tournament_id}/pairs`, {
+        method: "POST",
+        credentials: "include",
+        headers: getHeaders(),
+        body: JSON.stringify(pairForm),
+      });
+
+      const text = await response.text();
+      const data = JSON.parse(text);
+
+      if (!response.ok) throw new Error(data.detail || "Error al crear pareja");
+
+      toast.success("Pareja creada");
+      setPairDialogOpen(false);
+      setPairForm({ player1_id: "", player2_id: "" });
+      fetchTournamentDetails(selectedTournament.tournament_id);
+      fetchData();
+    } catch (error) {
+      toast.error(error.message);
+    } finally {
+      setSavingPair(false);
+    }
+  };
+
+  const handleDeletePair = async (pairId) => {
+    if (!selectedTournament) return;
+
+    try {
+      const response = await fetch(
+        `${API}/tournaments/${selectedTournament.tournament_id}/pairs/${pairId}`,
+        {
+          method: "DELETE",
+          credentials: "include",
+          headers: getHeaders(),
+        }
+      );
+
+      if (!response.ok) throw new Error("Error al eliminar pareja");
+
+      toast.success("Pareja eliminada");
+      fetchTournamentDetails(selectedTournament.tournament_id);
+      fetchData();
+    } catch (error) {
+      toast.error(error.message);
+    }
   };
 
   // Bracket Generation
@@ -228,12 +270,7 @@ export default function AdminPanel() {
       });
 
       const text = await response.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        throw new Error("Error de servidor");
-      }
+      const data = JSON.parse(text);
 
       if (!response.ok) throw new Error(data.detail || "Error al generar cuadro");
 
@@ -249,20 +286,20 @@ export default function AdminPanel() {
   const handleOpenMatchResult = (match) => {
     setSelectedMatch(match);
     setMatchResultForm({
-      set1_player1: match.sets?.[0]?.player1 || 0,
-      set1_player2: match.sets?.[0]?.player2 || 0,
-      set2_player1: match.sets?.[1]?.player1 || 0,
-      set2_player2: match.sets?.[1]?.player2 || 0,
-      set3_player1: match.sets?.[2]?.player1 || null,
-      set3_player2: match.sets?.[2]?.player2 || null,
-      winner_id: match.winner_id || "",
+      set1_pair1: match.sets?.[0]?.pair1 || 0,
+      set1_pair2: match.sets?.[0]?.pair2 || 0,
+      set2_pair1: match.sets?.[1]?.pair1 || 0,
+      set2_pair2: match.sets?.[1]?.pair2 || 0,
+      set3_pair1: match.sets?.[2]?.pair1 || null,
+      set3_pair2: match.sets?.[2]?.pair2 || null,
+      winner_pair_id: match.winner_pair_id || "",
     });
     setMatchDialogOpen(true);
   };
 
   const handleSaveMatchResult = async (e) => {
     e.preventDefault();
-    if (!matchResultForm.winner_id) {
+    if (!matchResultForm.winner_pair_id) {
       toast.error("Debes seleccionar un ganador");
       return;
     }
@@ -277,12 +314,7 @@ export default function AdminPanel() {
       });
 
       const text = await response.text();
-      let data;
-      try {
-        data = JSON.parse(text);
-      } catch {
-        throw new Error("Error de servidor");
-      }
+      const data = JSON.parse(text);
 
       if (!response.ok) throw new Error(data.detail || "Error al guardar resultado");
 
@@ -360,6 +392,16 @@ export default function AdminPanel() {
     final: "Final",
   };
 
+  // Get available players (not in any pair for this tournament)
+  const getAvailablePlayers = () => {
+    const playersInPairs = new Set();
+    tournamentPairs.forEach((pair) => {
+      playersInPairs.add(pair.player1_id);
+      playersInPairs.add(pair.player2_id);
+    });
+    return users.filter((u) => u.role !== "admin" && !playersInPairs.has(u.user_id));
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen bg-background">
@@ -374,13 +416,13 @@ export default function AdminPanel() {
   return (
     <div className="min-h-screen bg-background" data-testid="admin-panel">
       <Navbar />
-      
+
       <main className="container mx-auto px-6 py-8">
         <div className="mb-8">
           <h1 className="font-heading text-3xl font-bold text-secondary mb-2">
             Panel de Administración
           </h1>
-          <p className="text-muted-foreground">Gestiona torneos, usuarios y resultados</p>
+          <p className="text-muted-foreground">Gestiona torneos, parejas y usuarios</p>
         </div>
 
         <Tabs defaultValue="tournaments" className="space-y-6">
@@ -399,125 +441,18 @@ export default function AdminPanel() {
           <TabsContent value="tournaments" className="space-y-6">
             <div className="flex justify-between items-center">
               <h2 className="font-heading text-xl font-semibold">Lista de Torneos</h2>
-              <Dialog open={tournamentDialogOpen} onOpenChange={setTournamentDialogOpen}>
-                <Button
-                  className="rounded-lg"
-                  onClick={() => {
-                    setEditingTournament(null);
-                    resetTournamentForm();
-                    setTournamentDialogOpen(true);
-                  }}
-                  data-testid="create-tournament-btn"
-                >
-                  <Plus className="w-4 h-4 mr-2" />
-                  Nuevo Torneo
-                </Button>
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle className="font-heading">
-                      {editingTournament ? "Editar Torneo" : "Crear Torneo"}
-                    </DialogTitle>
-                    <DialogDescription>
-                      {editingTournament
-                        ? "Modifica los datos del torneo"
-                        : "Completa los datos para crear un nuevo torneo"}
-                    </DialogDescription>
-                  </DialogHeader>
-                  <form onSubmit={handleSaveTournament} className="space-y-4">
-                    <div className="space-y-2">
-                      <Label htmlFor="name">Nombre</Label>
-                      <Input
-                        id="name"
-                        value={tournamentForm.name}
-                        onChange={(e) =>
-                          setTournamentForm({ ...tournamentForm, name: e.target.value })
-                        }
-                        required
-                        data-testid="tournament-name-input"
-                      />
-                    </div>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div className="space-y-2">
-                        <Label>Categoría</Label>
-                        <Select
-                          value={tournamentForm.category}
-                          onValueChange={(v) =>
-                            setTournamentForm({ ...tournamentForm, category: v })
-                          }
-                        >
-                          <SelectTrigger data-testid="tournament-category-select">
-                            <SelectValue />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="7ma">7ma</SelectItem>
-                            <SelectItem value="6ta">6ta</SelectItem>
-                            <SelectItem value="5ta">5ta</SelectItem>
-                            <SelectItem value="4ta">4ta</SelectItem>
-                            <SelectItem value="3ra">3ra</SelectItem>
-                            <SelectItem value="2da">2da</SelectItem>
-                            <SelectItem value="1ra">1ra</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="max_capacity">Cupo Máximo</Label>
-                        <Input
-                          id="max_capacity"
-                          type="number"
-                          min="2"
-                          max="32"
-                          value={tournamentForm.max_capacity}
-                          onChange={(e) =>
-                            setTournamentForm({
-                              ...tournamentForm,
-                              max_capacity: parseInt(e.target.value),
-                            })
-                          }
-                          required
-                          data-testid="tournament-capacity-input"
-                        />
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="date">Fecha</Label>
-                      <Input
-                        id="date"
-                        type="date"
-                        value={tournamentForm.date}
-                        onChange={(e) =>
-                          setTournamentForm({ ...tournamentForm, date: e.target.value })
-                        }
-                        required
-                        data-testid="tournament-date-input"
-                      />
-                    </div>
-                    <div className="space-y-2">
-                      <Label htmlFor="description">Descripción</Label>
-                      <Input
-                        id="description"
-                        value={tournamentForm.description}
-                        onChange={(e) =>
-                          setTournamentForm({ ...tournamentForm, description: e.target.value })
-                        }
-                        placeholder="Opcional"
-                        data-testid="tournament-description-input"
-                      />
-                    </div>
-                    <DialogFooter>
-                      <Button type="submit" disabled={savingTournament} data-testid="save-tournament-btn">
-                        {savingTournament ? (
-                          <>
-                            <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                            Guardando...
-                          </>
-                        ) : (
-                          "Guardar"
-                        )}
-                      </Button>
-                    </DialogFooter>
-                  </form>
-                </DialogContent>
-              </Dialog>
+              <Button
+                className="rounded-lg"
+                onClick={() => {
+                  setEditingTournament(null);
+                  resetTournamentForm();
+                  setTournamentDialogOpen(true);
+                }}
+                data-testid="create-tournament-btn"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Nuevo Torneo
+              </Button>
             </div>
 
             {/* Tournaments List */}
@@ -526,10 +461,6 @@ export default function AdminPanel() {
                 <CardContent className="py-12 text-center">
                   <Trophy className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />
                   <p className="text-muted-foreground">No hay torneos creados</p>
-                  <Button className="mt-4" onClick={() => setTournamentDialogOpen(true)}>
-                    <Plus className="w-4 h-4 mr-2" />
-                    Crear primer torneo
-                  </Button>
                 </CardContent>
               </Card>
             ) : (
@@ -554,16 +485,12 @@ export default function AdminPanel() {
                           </div>
                           <div className="flex items-center gap-4 text-sm text-muted-foreground">
                             <span>{tournament.category}</span>
-                            <span>
-                              {new Date(tournament.date).toLocaleDateString("es-AR")}
-                            </span>
-                            <span>
-                              {tournament.current_registrations}/{tournament.max_capacity} inscriptos
-                            </span>
+                            <span>{new Date(tournament.date).toLocaleDateString("es-AR")}</span>
+                            <span>{tournament.current_pairs || 0}/{tournament.max_pairs} parejas</span>
                           </div>
                         </div>
                         <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
-                          {tournament.status === "open" && tournament.current_registrations >= 2 && (
+                          {tournament.status === "open" && (tournament.current_pairs || 0) >= 2 && (
                             <Button
                               variant="outline"
                               size="sm"
@@ -578,18 +505,12 @@ export default function AdminPanel() {
                             variant="ghost"
                             size="icon"
                             onClick={() => handleEditTournament(tournament)}
-                            data-testid={`edit-tournament-${tournament.tournament_id}`}
                           >
                             <Edit className="w-4 h-4" />
                           </Button>
                           <AlertDialog>
                             <AlertDialogTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="text-destructive hover:text-destructive"
-                                data-testid={`delete-tournament-${tournament.tournament_id}`}
-                              >
+                              <Button variant="ghost" size="icon" className="text-destructive">
                                 <Trash2 className="w-4 h-4" />
                               </Button>
                             </AlertDialogTrigger>
@@ -597,14 +518,14 @@ export default function AdminPanel() {
                               <AlertDialogHeader>
                                 <AlertDialogTitle>¿Eliminar torneo?</AlertDialogTitle>
                                 <AlertDialogDescription>
-                                  Esta acción eliminará el torneo, inscripciones y partidos asociados.
+                                  Esta acción eliminará el torneo, parejas y partidos.
                                 </AlertDialogDescription>
                               </AlertDialogHeader>
                               <AlertDialogFooter>
                                 <AlertDialogCancel>Cancelar</AlertDialogCancel>
                                 <AlertDialogAction
                                   onClick={() => handleDeleteTournament(tournament.tournament_id)}
-                                  className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+                                  className="bg-destructive text-destructive-foreground"
                                 >
                                   Eliminar
                                 </AlertDialogAction>
@@ -622,27 +543,64 @@ export default function AdminPanel() {
             {/* Selected Tournament Details */}
             {selectedTournament && (
               <Card className="border-border mt-6">
-                <CardHeader>
+                <CardHeader className="flex flex-row items-center justify-between">
                   <CardTitle className="font-heading">
                     Gestión: {selectedTournament.name}
                   </CardTitle>
+                  {selectedTournament.status === "open" && (
+                    <Button onClick={() => setPairDialogOpen(true)} data-testid="add-pair-btn">
+                      <UserPlus className="w-4 h-4 mr-2" />
+                      Agregar Pareja
+                    </Button>
+                  )}
                 </CardHeader>
                 <CardContent className="space-y-6">
-                  {/* Registrations */}
+                  {/* Pairs */}
                   <div>
-                    <h4 className="font-semibold mb-3">
-                      Inscriptos ({registrations.length})
-                    </h4>
-                    {registrations.length === 0 ? (
-                      <p className="text-muted-foreground text-sm">Sin inscripciones</p>
+                    <h4 className="font-semibold mb-3">Parejas Inscriptas ({tournamentPairs.length})</h4>
+                    {tournamentPairs.length === 0 ? (
+                      <p className="text-muted-foreground text-sm">Sin parejas inscriptas</p>
                     ) : (
-                      <div className="grid sm:grid-cols-2 md:grid-cols-3 gap-2">
-                        {registrations.map((reg) => (
+                      <div className="grid sm:grid-cols-2 gap-3">
+                        {tournamentPairs.map((pair, idx) => (
                           <div
-                            key={reg.user_id}
-                            className="px-3 py-2 bg-muted/50 rounded-lg text-sm"
+                            key={pair.pair_id}
+                            className="flex items-center justify-between p-3 bg-muted/50 rounded-lg"
                           >
-                            {reg.user_name}
+                            <div className="flex items-center gap-3">
+                              <span className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center font-bold text-primary text-sm">
+                                {idx + 1}
+                              </span>
+                              <div>
+                                <p className="font-medium">{pair.pair_name}</p>
+                                <p className="text-xs text-muted-foreground">
+                                  {pair.player1_name} & {pair.player2_name}
+                                </p>
+                              </div>
+                            </div>
+                            {selectedTournament.status === "open" && (
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="text-destructive">
+                                    <Trash2 className="w-4 h-4" />
+                                  </Button>
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Eliminar pareja?</AlertDialogTitle>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeletePair(pair.pair_id)}
+                                      className="bg-destructive text-destructive-foreground"
+                                    >
+                                      Eliminar
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            )}
                           </div>
                         ))}
                       </div>
@@ -669,55 +627,37 @@ export default function AdminPanel() {
                                       ? "bg-emerald-50 border-emerald-200"
                                       : "bg-amber-50 border-amber-200"
                                   }`}
-                                  data-testid={`admin-match-${match.match_id}`}
                                 >
                                   <div className="flex items-center justify-between">
                                     <div className="flex-1">
                                       <div className="flex items-center gap-2 text-sm">
-                                        <span
-                                          className={
-                                            match.winner_id === match.player1_id
-                                              ? "font-semibold"
-                                              : ""
-                                          }
-                                        >
-                                          {match.player1_name || "TBD"}
+                                        <span className={match.winner_pair_id === match.pair1_id ? "font-semibold" : ""}>
+                                          {match.pair1_name || "TBD"}
                                         </span>
                                         <span className="text-muted-foreground">vs</span>
-                                        <span
-                                          className={
-                                            match.winner_id === match.player2_id
-                                              ? "font-semibold"
-                                              : ""
-                                          }
-                                        >
-                                          {match.player2_name || "TBD"}
+                                        <span className={match.winner_pair_id === match.pair2_id ? "font-semibold" : ""}>
+                                          {match.pair2_name || "TBD"}
                                         </span>
                                       </div>
                                       {match.sets && match.sets.length > 0 && (
                                         <p className="text-xs text-muted-foreground mt-1">
-                                          {match.sets
-                                            .map((s) => `${s.player1}-${s.player2}`)
-                                            .join(" / ")}
+                                          {match.sets.map((s) => `${s.pair1}-${s.pair2}`).join(" / ")}
                                         </p>
                                       )}
                                     </div>
-                                    <div className="flex items-center gap-2">
+                                    <div>
                                       {match.status === "completed" ? (
                                         <CheckCircle className="w-5 h-5 text-emerald-500" />
-                                      ) : match.player1_id && match.player2_id ? (
+                                      ) : match.pair1_id && match.pair2_id ? (
                                         <Button
                                           size="sm"
                                           variant="outline"
                                           onClick={() => handleOpenMatchResult(match)}
-                                          data-testid={`set-result-${match.match_id}`}
                                         >
                                           Cargar Resultado
                                         </Button>
                                       ) : (
-                                        <span className="text-xs text-muted-foreground">
-                                          Esperando jugadores
-                                        </span>
+                                        <span className="text-xs text-muted-foreground">Esperando parejas</span>
                                       )}
                                     </div>
                                   </div>
@@ -737,278 +677,280 @@ export default function AdminPanel() {
           {/* Users Tab */}
           <TabsContent value="users" className="space-y-6">
             <h2 className="font-heading text-xl font-semibold">Lista de Usuarios</h2>
-            {users.length === 0 ? (
-              <Card className="border-border">
-                <CardContent className="py-12 text-center">
-                  <Users className="w-12 h-12 mx-auto text-muted-foreground/30 mb-4" />
-                  <p className="text-muted-foreground">No hay usuarios registrados</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <Card className="border-border">
-                <CardContent className="p-0">
-                  <div className="overflow-x-auto">
-                    <table className="w-full" data-testid="users-table">
-                      <thead>
-                        <tr className="border-b border-border">
-                          <th className="text-left py-3 px-4 font-semibold text-muted-foreground">
-                            Nombre
-                          </th>
-                          <th className="text-left py-3 px-4 font-semibold text-muted-foreground">
-                            Email
-                          </th>
-                          <th className="text-center py-3 px-4 font-semibold text-muted-foreground">
-                            Rol
-                          </th>
-                          <th className="text-center py-3 px-4 font-semibold text-muted-foreground">
-                            Puntos
-                          </th>
-                          <th className="text-right py-3 px-4 font-semibold text-muted-foreground">
-                            Acciones
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {users.map((user) => (
-                          <tr
-                            key={user.user_id}
-                            className="border-b border-border/50 hover:bg-muted/50"
-                            data-testid={`user-row-${user.user_id}`}
-                          >
-                            <td className="py-3 px-4">
-                              {user.first_name} {user.last_name}
-                            </td>
-                            <td className="py-3 px-4 text-muted-foreground">{user.email}</td>
-                            <td className="py-3 px-4 text-center">
-                              {user.role === "admin" ? (
-                                <span className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
-                                  <Shield className="w-3 h-3" />
-                                  Admin
-                                </span>
-                              ) : (
-                                <span className="text-sm text-muted-foreground">Usuario</span>
+            <Card className="border-border">
+              <CardContent className="p-0">
+                <div className="overflow-x-auto">
+                  <table className="w-full">
+                    <thead>
+                      <tr className="border-b border-border">
+                        <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Nombre</th>
+                        <th className="text-left py-3 px-4 font-semibold text-muted-foreground">Email</th>
+                        <th className="text-center py-3 px-4 font-semibold text-muted-foreground">Rol</th>
+                        <th className="text-center py-3 px-4 font-semibold text-muted-foreground">Puntos</th>
+                        <th className="text-right py-3 px-4 font-semibold text-muted-foreground">Acciones</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {users.map((user) => (
+                        <tr key={user.user_id} className="border-b border-border/50 hover:bg-muted/50">
+                          <td className="py-3 px-4">{user.first_name} {user.last_name}</td>
+                          <td className="py-3 px-4 text-muted-foreground">{user.email}</td>
+                          <td className="py-3 px-4 text-center">
+                            {user.role === "admin" ? (
+                              <span className="inline-flex items-center gap-1 px-2 py-1 bg-primary/10 text-primary text-xs font-medium rounded-full">
+                                <Shield className="w-3 h-3" />
+                                Admin
+                              </span>
+                            ) : (
+                              <span className="text-sm text-muted-foreground">Usuario</span>
+                            )}
+                          </td>
+                          <td className="py-3 px-4 text-center font-medium">{user.total_points || 0}</td>
+                          <td className="py-3 px-4 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              {user.role !== "admin" && (
+                                <Button variant="ghost" size="sm" onClick={() => handleMakeAdmin(user.user_id)}>
+                                  <Shield className="w-4 h-4 mr-1" />
+                                  Hacer Admin
+                                </Button>
                               )}
-                            </td>
-                            <td className="py-3 px-4 text-center font-medium">
-                              {user.total_points || 0}
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              <div className="flex items-center justify-end gap-2">
-                                {user.role !== "admin" && (
-                                  <Button
-                                    variant="ghost"
-                                    size="sm"
-                                    onClick={() => handleMakeAdmin(user.user_id)}
-                                    data-testid={`make-admin-${user.user_id}`}
-                                  >
-                                    <Shield className="w-4 h-4 mr-1" />
-                                    Hacer Admin
+                              <AlertDialog>
+                                <AlertDialogTrigger asChild>
+                                  <Button variant="ghost" size="icon" className="text-destructive">
+                                    <Trash2 className="w-4 h-4" />
                                   </Button>
-                                )}
-                                <AlertDialog>
-                                  <AlertDialogTrigger asChild>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      className="text-destructive hover:text-destructive"
-                                      data-testid={`delete-user-${user.user_id}`}
+                                </AlertDialogTrigger>
+                                <AlertDialogContent>
+                                  <AlertDialogHeader>
+                                    <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
+                                  </AlertDialogHeader>
+                                  <AlertDialogFooter>
+                                    <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                                    <AlertDialogAction
+                                      onClick={() => handleDeleteUser(user.user_id)}
+                                      className="bg-destructive text-destructive-foreground"
                                     >
-                                      <Trash2 className="w-4 h-4" />
-                                    </Button>
-                                  </AlertDialogTrigger>
-                                  <AlertDialogContent>
-                                    <AlertDialogHeader>
-                                      <AlertDialogTitle>¿Eliminar usuario?</AlertDialogTitle>
-                                      <AlertDialogDescription>
-                                        Esta acción eliminará el usuario y sus inscripciones.
-                                      </AlertDialogDescription>
-                                    </AlertDialogHeader>
-                                    <AlertDialogFooter>
-                                      <AlertDialogCancel>Cancelar</AlertDialogCancel>
-                                      <AlertDialogAction
-                                        onClick={() => handleDeleteUser(user.user_id)}
-                                        className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-                                      >
-                                        Eliminar
-                                      </AlertDialogAction>
-                                    </AlertDialogFooter>
-                                  </AlertDialogContent>
-                                </AlertDialog>
-                              </div>
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+                                      Eliminar
+                                    </AlertDialogAction>
+                                  </AlertDialogFooter>
+                                </AlertDialogContent>
+                              </AlertDialog>
+                            </div>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </CardContent>
+            </Card>
           </TabsContent>
         </Tabs>
+
+        {/* Tournament Dialog */}
+        <Dialog open={tournamentDialogOpen} onOpenChange={setTournamentDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>{editingTournament ? "Editar Torneo" : "Crear Torneo"}</DialogTitle>
+            </DialogHeader>
+            <form onSubmit={handleSaveTournament} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Nombre</Label>
+                <Input
+                  value={tournamentForm.name}
+                  onChange={(e) => setTournamentForm({ ...tournamentForm, name: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2">
+                  <Label>Categoría</Label>
+                  <Select
+                    value={tournamentForm.category}
+                    onValueChange={(v) => setTournamentForm({ ...tournamentForm, category: v })}
+                  >
+                    <SelectTrigger><SelectValue /></SelectTrigger>
+                    <SelectContent>
+                      {["7ma", "6ta", "5ta", "4ta", "3ra", "2da", "1ra"].map((c) => (
+                        <SelectItem key={c} value={c}>{c}</SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="space-y-2">
+                  <Label>Máx. Parejas</Label>
+                  <Input
+                    type="number"
+                    min="2"
+                    max="16"
+                    value={tournamentForm.max_pairs}
+                    onChange={(e) => setTournamentForm({ ...tournamentForm, max_pairs: parseInt(e.target.value) })}
+                    required
+                  />
+                </div>
+              </div>
+              <div className="space-y-2">
+                <Label>Fecha</Label>
+                <Input
+                  type="date"
+                  value={tournamentForm.date}
+                  onChange={(e) => setTournamentForm({ ...tournamentForm, date: e.target.value })}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label>Descripción (opcional)</Label>
+                <Input
+                  value={tournamentForm.description}
+                  onChange={(e) => setTournamentForm({ ...tournamentForm, description: e.target.value })}
+                />
+              </div>
+              <DialogFooter>
+                <Button type="submit" disabled={savingTournament}>
+                  {savingTournament ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Guardar
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
+
+        {/* Pair Dialog */}
+        <Dialog open={pairDialogOpen} onOpenChange={setPairDialogOpen}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>Agregar Pareja</DialogTitle>
+              <DialogDescription>Selecciona dos jugadores para formar una pareja</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleCreatePair} className="space-y-4">
+              <div className="space-y-2">
+                <Label>Jugador 1</Label>
+                <Select
+                  value={pairForm.player1_id}
+                  onValueChange={(v) => setPairForm({ ...pairForm, player1_id: v })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Seleccionar jugador" /></SelectTrigger>
+                  <SelectContent>
+                    {getAvailablePlayers()
+                      .filter((u) => u.user_id !== pairForm.player2_id)
+                      .map((u) => (
+                        <SelectItem key={u.user_id} value={u.user_id}>
+                          {u.first_name} {u.last_name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <div className="space-y-2">
+                <Label>Jugador 2</Label>
+                <Select
+                  value={pairForm.player2_id}
+                  onValueChange={(v) => setPairForm({ ...pairForm, player2_id: v })}
+                >
+                  <SelectTrigger><SelectValue placeholder="Seleccionar jugador" /></SelectTrigger>
+                  <SelectContent>
+                    {getAvailablePlayers()
+                      .filter((u) => u.user_id !== pairForm.player1_id)
+                      .map((u) => (
+                        <SelectItem key={u.user_id} value={u.user_id}>
+                          {u.first_name} {u.last_name}
+                        </SelectItem>
+                      ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              <DialogFooter>
+                <Button type="submit" disabled={savingPair || !pairForm.player1_id || !pairForm.player2_id}>
+                  {savingPair ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Crear Pareja
+                </Button>
+              </DialogFooter>
+            </form>
+          </DialogContent>
+        </Dialog>
 
         {/* Match Result Dialog */}
         <Dialog open={matchDialogOpen} onOpenChange={setMatchDialogOpen}>
           <DialogContent className="sm:max-w-md">
             <DialogHeader>
-              <DialogTitle className="font-heading">Cargar Resultado</DialogTitle>
+              <DialogTitle>Cargar Resultado</DialogTitle>
               <DialogDescription>
-                {selectedMatch?.player1_name} vs {selectedMatch?.player2_name}
+                {selectedMatch?.pair1_name} vs {selectedMatch?.pair2_name}
               </DialogDescription>
             </DialogHeader>
             <form onSubmit={handleSaveMatchResult} className="space-y-4">
-              {/* Sets */}
               <div className="space-y-3">
                 <Label>Set 1</Label>
                 <div className="flex items-center gap-2">
                   <Input
-                    type="number"
-                    min="0"
-                    max="7"
-                    value={matchResultForm.set1_player1}
-                    onChange={(e) =>
-                      setMatchResultForm({
-                        ...matchResultForm,
-                        set1_player1: parseInt(e.target.value) || 0,
-                      })
-                    }
-                    className="w-16 text-center"
-                    data-testid="set1-player1-input"
+                    type="number" min="0" max="7" className="w-16 text-center"
+                    value={matchResultForm.set1_pair1}
+                    onChange={(e) => setMatchResultForm({ ...matchResultForm, set1_pair1: parseInt(e.target.value) || 0 })}
                   />
-                  <span className="text-muted-foreground">-</span>
+                  <span>-</span>
                   <Input
-                    type="number"
-                    min="0"
-                    max="7"
-                    value={matchResultForm.set1_player2}
-                    onChange={(e) =>
-                      setMatchResultForm({
-                        ...matchResultForm,
-                        set1_player2: parseInt(e.target.value) || 0,
-                      })
-                    }
-                    className="w-16 text-center"
-                    data-testid="set1-player2-input"
+                    type="number" min="0" max="7" className="w-16 text-center"
+                    value={matchResultForm.set1_pair2}
+                    onChange={(e) => setMatchResultForm({ ...matchResultForm, set1_pair2: parseInt(e.target.value) || 0 })}
                   />
                 </div>
               </div>
-
               <div className="space-y-3">
                 <Label>Set 2</Label>
                 <div className="flex items-center gap-2">
                   <Input
-                    type="number"
-                    min="0"
-                    max="7"
-                    value={matchResultForm.set2_player1}
-                    onChange={(e) =>
-                      setMatchResultForm({
-                        ...matchResultForm,
-                        set2_player1: parseInt(e.target.value) || 0,
-                      })
-                    }
-                    className="w-16 text-center"
-                    data-testid="set2-player1-input"
+                    type="number" min="0" max="7" className="w-16 text-center"
+                    value={matchResultForm.set2_pair1}
+                    onChange={(e) => setMatchResultForm({ ...matchResultForm, set2_pair1: parseInt(e.target.value) || 0 })}
                   />
-                  <span className="text-muted-foreground">-</span>
+                  <span>-</span>
                   <Input
-                    type="number"
-                    min="0"
-                    max="7"
-                    value={matchResultForm.set2_player2}
-                    onChange={(e) =>
-                      setMatchResultForm({
-                        ...matchResultForm,
-                        set2_player2: parseInt(e.target.value) || 0,
-                      })
-                    }
-                    className="w-16 text-center"
-                    data-testid="set2-player2-input"
+                    type="number" min="0" max="7" className="w-16 text-center"
+                    value={matchResultForm.set2_pair2}
+                    onChange={(e) => setMatchResultForm({ ...matchResultForm, set2_pair2: parseInt(e.target.value) || 0 })}
                   />
                 </div>
               </div>
-
               <div className="space-y-3">
                 <Label>Set 3 (opcional)</Label>
                 <div className="flex items-center gap-2">
                   <Input
-                    type="number"
-                    min="0"
-                    max="7"
-                    value={matchResultForm.set3_player1 ?? ""}
-                    onChange={(e) =>
-                      setMatchResultForm({
-                        ...matchResultForm,
-                        set3_player1: e.target.value ? parseInt(e.target.value) : null,
-                      })
-                    }
-                    className="w-16 text-center"
-                    placeholder="-"
-                    data-testid="set3-player1-input"
+                    type="number" min="0" max="7" className="w-16 text-center" placeholder="-"
+                    value={matchResultForm.set3_pair1 ?? ""}
+                    onChange={(e) => setMatchResultForm({ ...matchResultForm, set3_pair1: e.target.value ? parseInt(e.target.value) : null })}
                   />
-                  <span className="text-muted-foreground">-</span>
+                  <span>-</span>
                   <Input
-                    type="number"
-                    min="0"
-                    max="7"
-                    value={matchResultForm.set3_player2 ?? ""}
-                    onChange={(e) =>
-                      setMatchResultForm({
-                        ...matchResultForm,
-                        set3_player2: e.target.value ? parseInt(e.target.value) : null,
-                      })
-                    }
-                    className="w-16 text-center"
-                    placeholder="-"
-                    data-testid="set3-player2-input"
+                    type="number" min="0" max="7" className="w-16 text-center" placeholder="-"
+                    value={matchResultForm.set3_pair2 ?? ""}
+                    onChange={(e) => setMatchResultForm({ ...matchResultForm, set3_pair2: e.target.value ? parseInt(e.target.value) : null })}
                   />
                 </div>
               </div>
-
-              {/* Winner Selection */}
               <div className="space-y-3">
                 <Label>Ganador</Label>
                 <Select
-                  value={matchResultForm.winner_id}
-                  onValueChange={(v) =>
-                    setMatchResultForm({ ...matchResultForm, winner_id: v })
-                  }
+                  value={matchResultForm.winner_pair_id}
+                  onValueChange={(v) => setMatchResultForm({ ...matchResultForm, winner_pair_id: v })}
                 >
-                  <SelectTrigger data-testid="winner-select">
-                    <SelectValue placeholder="Seleccionar ganador" />
-                  </SelectTrigger>
+                  <SelectTrigger><SelectValue placeholder="Seleccionar ganador" /></SelectTrigger>
                   <SelectContent>
-                    {selectedMatch?.player1_id && (
-                      <SelectItem value={selectedMatch.player1_id}>
-                        {selectedMatch.player1_name}
-                      </SelectItem>
+                    {selectedMatch?.pair1_id && (
+                      <SelectItem value={selectedMatch.pair1_id}>{selectedMatch.pair1_name}</SelectItem>
                     )}
-                    {selectedMatch?.player2_id && (
-                      <SelectItem value={selectedMatch.player2_id}>
-                        {selectedMatch.player2_name}
-                      </SelectItem>
+                    {selectedMatch?.pair2_id && (
+                      <SelectItem value={selectedMatch.pair2_id}>{selectedMatch.pair2_name}</SelectItem>
                     )}
                   </SelectContent>
                 </Select>
               </div>
-
               <DialogFooter>
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setMatchDialogOpen(false)}
-                >
+                <Button type="button" variant="outline" onClick={() => setMatchDialogOpen(false)}>
                   Cancelar
                 </Button>
-                <Button type="submit" disabled={savingMatch} data-testid="save-match-result-btn">
-                  {savingMatch ? (
-                    <>
-                      <Loader2 className="w-4 h-4 mr-2 animate-spin" />
-                      Guardando...
-                    </>
-                  ) : (
-                    "Guardar Resultado"
-                  )}
+                <Button type="submit" disabled={savingMatch}>
+                  {savingMatch ? <Loader2 className="w-4 h-4 animate-spin mr-2" /> : null}
+                  Guardar
                 </Button>
               </DialogFooter>
             </form>
