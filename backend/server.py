@@ -825,7 +825,9 @@ async def check_tournament_completion(tournament_id: str):
             elif round_name == "round_of_16":
                 pair_results[loser_id]["best_round"] = "round_of_16"
     
-    # Assign points to EACH PLAYER in the pair
+    # Assign points to EACH PLAYER in the pair - BY CATEGORY
+    category = tournament.get("category", "4ta")
+    
     for pair_id, result in pair_results.items():
         points = 0
         if result.get("is_winner"):
@@ -842,18 +844,26 @@ async def check_tournament_completion(tournament_id: str):
         if points > 0:
             # Update points for BOTH players in the pair
             for player_id in result.get("players", []):
+                # Update total points and category-specific points
                 await db.users.update_one(
                     {"user_id": player_id},
-                    {"$inc": {"total_points": points, "tournaments_played": 1}}
+                    {
+                        "$inc": {
+                            "total_points": points, 
+                            "tournaments_played": 1,
+                            f"points_by_category.{category}": points
+                        }
+                    }
                 )
                 
-                # Record points history
+                # Record points history with category
                 await db.points_history.insert_one({
                     "history_id": f"ph_{uuid.uuid4().hex[:12]}",
                     "user_id": player_id,
                     "pair_id": pair_id,
                     "tournament_id": tournament_id,
                     "tournament_name": tournament.get("name", ""),
+                    "category": category,
                     "points": points,
                     "result": result["best_round"],
                     "created_at": datetime.now(timezone.utc).isoformat()
