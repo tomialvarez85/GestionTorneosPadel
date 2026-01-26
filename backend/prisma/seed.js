@@ -1,20 +1,26 @@
 import { PrismaClient } from "@prisma/client";
+import bcrypt from "bcrypt";
+
 const prisma = new PrismaClient();
 
 async function main() {
-  const admin = await prisma.user.create({
-    data: {
-      name: "Admin",
+  const passwordHash = await bcrypt.hash("admin123", 10);
+
+  await prisma.user.upsert({
+    where: { email: "admin@padel.com" },
+    update: {},
+    create: {
+      first_name: "Admin",
+      last_name: "Padel",
       email: "admin@padel.com",
-      password: "123456", // bcrypt
-      role: "ADMIN"
-    }
+      password: passwordHash,
+      role: "admin",
+    },
   });
+
+  console.log("✅ Admin creado");
 }
 
 main()
-  .then(() => prisma.$disconnect())
-  .catch(e => {
-    console.error(e);
-    prisma.$disconnect();
-  });
+  .catch(console.error)
+  .finally(() => prisma.$disconnect());
