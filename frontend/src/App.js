@@ -11,6 +11,7 @@ import Tournaments from "./pages/Tournaments";
 import TournamentDetail from "./pages/TournamentDetail";
 import Ranking from "./pages/Ranking";
 import Profile from "./pages/Profile";
+import UserProfile from "./pages/UserProfile";
 import AdminPanel from "./pages/AdminPanel";
 import AuthCallback from "./pages/AuthCallback";
 
