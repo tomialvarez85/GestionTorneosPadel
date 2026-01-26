@@ -70,6 +70,7 @@ function AppRouter() {
       <Route path="/ranking" element={<Ranking />} />
       <Route path="/tournaments" element={<Tournaments />} />
       <Route path="/tournaments/:id" element={<TournamentDetail />} />
+      <Route path="/players/:userId" element={<UserProfile />} />
       <Route
         path="/dashboard"
         element={
