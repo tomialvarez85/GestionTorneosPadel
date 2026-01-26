@@ -287,6 +287,20 @@ async def get_users(request: Request):
     users = await db.users.find({}, {"_id": 0, "password_hash": 0}).to_list(1000)
     return users
 
+@api_router.get("/users/{user_id}/profile")
+async def get_user_profile(user_id: str):
+    """Get public user profile - PUBLIC (no auth required)"""
+    user = await db.users.find_one({"user_id": user_id}, {"_id": 0, "password_hash": 0, "email": 0})
+    if not user:
+        raise HTTPException(status_code=404, detail="User not found")
+    return user
+
+@api_router.get("/users/{user_id}/points-history-public")
+async def get_user_points_history_public(user_id: str):
+    """Get public points history - PUBLIC (no auth required)"""
+    history = await db.points_history.find({"user_id": user_id}, {"_id": 0}).sort("created_at", -1).to_list(100)
+    return history
+
 @api_router.get("/users/{user_id}")
 async def get_user(user_id: str, request: Request):
     await get_current_user(request)
